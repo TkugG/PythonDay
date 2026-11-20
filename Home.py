@@ -2,83 +2,105 @@ from sklearn.neighbors import KNeighborsClassifier
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import os
 
-st.header("โปรเจคการจำแนกข้อมูลดอกไม้")
-#st.image("./img/kairung022.jpg")
+# โครงสร้างหน้าเว็บและข้อมูลผู้จัดทำ
+col_title, col_pic = st.columns([4, 1])
+with col_title:
+    st.header("โปรเจคการจำแนกคุณภาพไวน์แดง")
+with col_pic:
+    if os.path.exists("./img/myprofile.png"):
+        st.image("./img/myprofile.png", width=110)
+
+# แสดงประเภทคุณภาพไวน์ 3 ระดับ พร้อมรูปภาพตัวอย่าง
+img_low = "https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?auto=format&fit=crop&w=600&q=80"
+img_med = "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?auto=format&fit=crop&w=600&q=80"
+img_high = "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=600&q=80"
+
 col1, col2, col3 = st.columns(3)
 
 with col1:
-   st.header("Versicolor")
-   st.image("./img/iris1.jpg")
+    st.subheader("คุณภาพทั่วไป")
+    st.image(img_low)
 
 with col2:
-   st.header("Verginiga")
-   st.image("./img/iris2.jpg")
+    st.subheader("คุณภาพปานกลาง")
+    st.image(img_med)
 
 with col3:
-   st.header("Setosa")
-   st.image("./img/iris3.jpg")
+    st.subheader("คุณภาพดีเยี่ยม")
+    st.image(img_high)
 
+# ส่วนแสดงข้อมูลสถิติ
 html_7 = """
-<div style="background-color:#EC7063;padding:15px;border-radius:15px 15px 15px 15px;border-style:'solid';border-color:black">
-<center><h5>สถิติข้อมูลดอกไม้</h5></center>
+<div style="background-color:#722F37;padding:12px;border-radius:10px;color:white;text-align:center;">
+<h5 style="margin:0;">สถิติข้อมูลไวน์แดง</h5>
 </div>
 """
 st.markdown(html_7, unsafe_allow_html=True)
-st.markdown("")
-dt = pd.read_csv("./data/iris.csv")
-st.write(dt.head(10))
+st.write("")
 
-dt1 = dt['petallength'].sum()
-dt2 = dt['petalwidth'].sum()
-dt3 = dt['sepallength'].sum()
-dt4 = dt['sepalwidth'].sum()
+# โหลดชุดข้อมูลไวน์แดง
+dt = pd.read_csv("./data/winequality-red.csv", sep=";")
 
-dx = [dt1, dt2, dt3, dt4]
-dx2 = pd.DataFrame(dx, index=["d1", "d2", "d3", "d4"])
+# ฟังก์ชันจัดกลุ่มคุณภาพไวน์เป็น 3 ระดับ
+def categorize_quality(score):
+    if score <= 5:
+        return "คุณภาพทั่วไป"
+    elif score == 6:
+        return "คุณภาพปานกลาง"
+    else:
+        return "คุณภาพดีเยี่ยม"
 
+dt["ระดับคุณภาพ"] = dt["quality"].apply(categorize_quality)
+
+# แสดงตัวอย่างข้อมูล
+selected_columns = ["alcohol", "volatile acidity", "sulphates", "citric acid", "quality", "ระดับคุณภาพ"]
+st.write(dt[selected_columns].head(10))
+
+# ส่วนการแสดงผลกราฟข้อมูล
 if st.button("แสดงการจินตทัศน์ข้อมูล"):
-   #st.write(dt.head(10))
-   st.bar_chart(dx2)
-   st.button("ไม่แสดงข้อมูล")
+    quality_counts = dt["ระดับคุณภาพ"].value_counts()
+    st.write("จำนวนข้อมูลตามระดับคุณภาพ:")
+    st.bar_chart(quality_counts)
 else:
     st.write("ไม่แสดงข้อมูล")
 
+# ส่วนทำนายผล
 html_8 = """
-<div style="background-color:#6BD5DA;padding:15px;border-radius:15px 15px 15px 15px;border-style:'solid';border-color:black">
-<center><h5>ทำนายข้อมูล</h5></center>
+<div style="background-color:#8B0000;padding:12px;border-radius:10px;color:white;text-align:center;">
+<h5 style="margin:0;">ทำนายคุณภาพไวน์</h5>
 </div>
 """
 st.markdown(html_8, unsafe_allow_html=True)
-st.markdown("")
+st.write("")
 
-
-pt_len = st.slider("กรุณาเลือกข้อมูล petal.length")
-pt_wd = st.slider("กรุณาเลือกข้อมูล petal.width")
-
-sp_len = st.number_input("กรุณาเลือกข้อมูล sepal.length")
-sp_wd = st.number_input("กรุณาเลือกข้อมูล sepal.width")
+# อินพุตฟีเจอร์เด่น 4 ตัว
+alc = st.slider("ปริมาณแอลกอฮอล์ (Alcohol)", min_value=8.0, max_value=15.0, value=10.4, step=0.1)
+vol_acid = st.slider("กรดระเหย (Volatile Acidity)", min_value=0.10, max_value=1.60, value=0.52, step=0.01)
+sulph = st.slider("ปริมาณซัลเฟต (Sulphates)", min_value=0.30, max_value=2.00, value=0.66, step=0.01)
+cit_acid = st.slider("กรดซิตริก (Citric Acid)", min_value=0.00, max_value=1.00, value=0.27, step=0.01)
 
 if st.button("ทำนายผล"):
-   #st.write("ทำนาย")
-   #dt = pd.read_csv("./data/iris.csv") 
+    feature_cols = ["alcohol", "volatile acidity", "sulphates", "citric acid"]
+    X = dt[feature_cols]
+    y = dt["ระดับคุณภาพ"]
 
-   X = dt.drop('variety', axis=1)
-   y = dt.variety   
-   Knn_model = KNeighborsClassifier(n_neighbors=3)
-   Knn_model.fit(X, y)  
+    # เทรนโมเดล KNN อย่างง่าย
+    Knn_model = KNeighborsClassifier(n_neighbors=5)
+    Knn_model.fit(X, y)
 
-   x_input = np.array([[pt_len, pt_wd, sp_len, sp_wd]]) #ข้อมูลใหม่สำหรับทำนาย
+    x_input = pd.DataFrame([[alc, vol_acid, sulph, cit_acid]], columns=feature_cols)
+    out = Knn_model.predict(x_input)
+    result = out[0]
 
-   st.write(Knn_model.predict(x_input))   
-   out=Knn_model.predict(x_input)
+    st.subheader(f"ผลการทำนาย: {result}")
 
-   if out[0] == 'Setosa':
-    st.image("./img/iris1.jpg")
-   elif out[0] == 'Versicolor':       
-    st.image("./img/iris2.jpg")
-   else:
-    st.image("./img/iris3.jpg")
+    if result == "คุณภาพทั่วไป":
+        st.image(img_low)
+    elif result == "คุณภาพปานกลาง":
+        st.image(img_med)
+    else:
+        st.image(img_high)
 else:
     st.write("ไม่ทำนาย")
