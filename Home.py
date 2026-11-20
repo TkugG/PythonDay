@@ -4,272 +4,281 @@ import pandas as pd
 import numpy as np
 import os
 
-# ตั้งค่าหน้าเว็บแบบ Wide Screen และซ่อน UI เริ่มต้น
+# ตั้งค่าหน้าเว็บแบบกว้างและเปิด Sidebar เป็นค่าเริ่มต้น
 st.set_page_config(
-    page_title="MGS3 - TACTICAL SURVIVAL VIEWER",
+    page_title="Tactical Wine Quality Analyzer",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# สไตล์ Metal Gear Solid 3: Codec Screen & Tactical HUD (ไม่มีอิโมจิ 100%)
+# สไตล์ CSS: ฟอนต์ Prompt อ่านง่าย สบายตา คมชัด สไตล์ Tactical Dark โดยไม่มีอิโมจิ
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 
-    /* กำหนด Theme รวมเป็น MGS CRT Terminal */
-    html, body, [class*="css"] {
-        font-family: 'Share Tech Mono', 'Courier New', monospace !important;
-        background-color: #050A05 !important;
-        color: #88C488 !important;
+    html, body, [class*="css"], .stMarkdown, p, div, span, label {
+        font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif !important;
     }
     
+    /* พื้นหลังโทน Tactical Slate Dark */
+    .stApp {
+        background-color: #070C08 !important;
+        color: #F1F5F9 !important;
+    }
+
     #MainMenu, footer, header {visibility: hidden;}
-    
+
     .block-container {
-        padding-top: 1rem;
-        padding-bottom: 5rem;
+        padding-top: 1.5rem;
+        padding-bottom: 3rem;
         max-width: 1300px;
     }
 
-    /* เส้น Scanline แบบจอ CRT สายลับ */
-    .crt-overlay {
-        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%);
-        background-size: 100% 4px;
-        pointer-events: none;
+    /* กล่องข้อมูล Tactical Card คมชัด ไม่เบลอ */
+    .tactical-card {
+        background-color: #0E1610;
+        border: 1px solid #1E3824;
+        border-radius: 6px;
+        padding: 20px;
+        margin-bottom: 20px;
     }
 
-    /* กรอบ HUD ทหาร */
-    .mgs-box {
-        border: 1px solid #00FF66;
-        background: rgba(8, 18, 10, 0.85);
-        box-shadow: 0 0 12px rgba(0, 255, 102, 0.2), inset 0 0 10px rgba(0, 255, 102, 0.05);
-        padding: 16px;
-        margin-bottom: 15px;
-    }
-
-    .mgs-title {
+    .tactical-header {
         color: #00FF66;
-        font-size: 1.1rem;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        border-bottom: 1px solid #00FF66;
-        padding-bottom: 4px;
-        margin-bottom: 12px;
-        text-shadow: 0 0 8px rgba(0, 255, 102, 0.6);
-    }
-
-    /* แถบหลอด Life & Stamina สไตล์ MGS3 */
-    .bar-label {
-        font-size: 0.85rem;
-        color: #00FF66;
-        margin-bottom: 2px;
+        font-size: 1.05rem;
+        font-weight: 600;
         letter-spacing: 1px;
-    }
-    .bar-container {
-        background-color: #112211;
-        border: 1px solid #00AA44;
-        height: 14px;
-        width: 100%;
-        margin-bottom: 10px;
-    }
-    .life-fill {
-        background: linear-gradient(90deg, #009933, #00FF66);
-        height: 100%;
-        width: 100%;
-    }
-    .stamina-fill-high {
-        background: linear-gradient(90deg, #DDAA00, #FFCC00);
-        height: 100%;
-        width: 100%;
-        box-shadow: 0 0 8px #FFCC00;
-    }
-    .stamina-fill-med {
-        background: linear-gradient(90deg, #009933, #00FF66);
-        height: 100%;
-        width: 60%;
-    }
-    .stamina-fill-low {
-        background: linear-gradient(90deg, #990000, #FF2222);
-        height: 100%;
-        width: 20%;
-        box-shadow: 0 0 8px #FF2222;
+        border-bottom: 1px solid #1E3824;
+        padding-bottom: 8px;
+        margin-bottom: 16px;
     }
 
-    /* กล่องสนทนา Codec */
-    .codec-dialog {
-        background-color: #061007;
-        border-left: 3px solid #00FF66;
-        padding: 14px;
-        color: #C0ECC0;
+    /* สไตล์ป้ายผลการประเมินคุณภาพ */
+    .badge-s {
+        background-color: rgba(0, 255, 102, 0.12);
+        color: #00FF66;
+        border: 1px solid #00FF66;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 1.15rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 12px;
+    }
+    .badge-b {
+        background-color: rgba(56, 189, 248, 0.12);
+        color: #38BDF8;
+        border: 1px solid #38BDF8;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 1.15rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 12px;
+    }
+    .badge-d {
+        background-color: rgba(244, 63, 94, 0.12);
+        color: #F43F5E;
+        border: 1px solid #F43F5E;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 1.15rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 12px;
+    }
+
+    /* แถบหลอดประเมินคะแนนรสสัมผัส (Sensory Index) */
+    .bar-bg {
+        background-color: #152218;
+        border: 1px solid #28442E;
+        height: 12px;
+        border-radius: 6px;
+        width: 100%;
+        overflow: hidden;
+        margin-bottom: 14px;
+    }
+    .bar-s {
+        background: #00FF66;
+        height: 100%;
+        width: 100%;
+    }
+    .bar-b {
+        background: #38BDF8;
+        height: 100%;
+        width: 65%;
+    }
+    .bar-d {
+        background: #F43F5E;
+        height: 100%;
+        width: 25%;
+    }
+
+    /* กล่องข้อความวิเคราะห์ผลไวน์ */
+    .analysis-text {
+        color: #E2E8F0;
         font-size: 0.95rem;
-        line-height: 1.5;
-        letter-spacing: 0.5px;
+        line-height: 1.6;
+        background-color: #09100A;
+        border-left: 3px solid #00FF66;
+        padding: 12px 16px;
+        border-radius: 0 4px 4px 0;
     }
 
-    /* ลิ้นชักปรับค่าตัวแปรซ้ายล่างแบบ Smooth Floating Drawer */
-    div[data-testid="stExpander"] {
-        position: fixed !important;
-        bottom: 20px !important;
-        left: 20px !important;
-        width: 440px !important;
-        max-width: 90vw !important;
-        z-index: 99999 !important;
-        background-color: rgba(5, 12, 6, 0.97) !important;
-        border: 1px solid #00FF66 !important;
-        box-shadow: 0 0 20px rgba(0, 255, 102, 0.35) !important;
-        border-radius: 0px !important;
-        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+    /* ปรับแต่ง Sidebar ให้เป็นแผงควบคุม Tactical */
+    section[data-testid="stSidebar"] {
+        background-color: #0A120C !important;
+        border-right: 1px solid #1E3824 !important;
     }
-    
-    div[data-testid="stExpander"] summary {
-        background-color: #0B1C0E !important;
+    section[data-testid="stSidebar"] .stMarkdown h2, 
+    section[data-testid="stSidebar"] .stMarkdown h3 {
         color: #00FF66 !important;
-        font-weight: bold !important;
-        letter-spacing: 1.5px !important;
-        padding: 10px 14px !important;
-        border-bottom: 1px solid #00AA44 !important;
-    }
-    div[data-testid="stExpander"] summary:hover {
-        color: #FFFFFF !important;
-        background-color: #123018 !important;
-    }
-
-    /* ปรับแต่ง Sliders ให้เข้ากับสไตล์ Green Military */
-    .stSlider > div > div > div > div {
-        background-color: #00FF66 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# โหลดชุดข้อมูลไวน์
+# ฟังก์ชันโหลดและจัดกลุ่มข้อมูลไวน์
 @st.cache_data
-def load_data():
+def load_wine_data():
     df = pd.read_csv("./data/winequality-red.csv", sep=";")
     def categorize(score):
         if score <= 5:
-            return "LOW"
+            return "D-Rank: คุณภาพต่ำ"
         elif score == 6:
-            return "MED"
+            return "B-Rank: คุณภาพปานกลาง"
         else:
-            return "HIGH"
-    df["MGS_RANK"] = df["quality"].apply(categorize)
+            return "S-Rank: คุณภาพดีเยี่ยม"
+    df["เกรดคุณภาพ"] = df["quality"].apply(categorize)
     return df
 
 # เทรนโมเดล KNN
 @st.cache_resource
-def train_model(df):
+def train_knn_model(df):
     features = ["alcohol", "volatile acidity", "sulphates", "citric acid"]
     X = df[features]
-    y = df["MGS_RANK"]
+    y = df["เกรดคุณภาพ"]
     model = KNeighborsClassifier(n_neighbors=5)
     model.fit(X, y)
     return model
 
-dt = load_data()
-model = train_model(dt)
+df_wine = load_wine_data()
+knn_model = train_knn_model(df_wine)
 
-# Header แถบภารกิจ MGS3
+# แถบควบคุมตัวแปรสารเคมีใน Sidebar (พับเก็บได้ ไม่บังหน้าจอหลัก)
+with st.sidebar:
+    st.markdown("### แผงควบคุมตัวแปรไวน์")
+    st.caption("ปรับแต่งคุณลักษณะทางเคมีเพื่อจำลองผลลัพธ์แบบทันที")
+    
+    if os.path.exists("./img/myprofile.png"):
+        col_p1, col_p2 = st.columns([1, 2])
+        with col_p1:
+            st.image("./img/myprofile.png", width=75)
+        with col_p2:
+            st.markdown("<div style='font-size:0.85rem; color:#94A3B8; margin-top:8px;'>ผู้ประเมินคุณภาพ<br><strong style='color:#F1F5F9; font-size:0.95rem;'>Wine Analyst</strong></div>", unsafe_allow_html=True)
+        st.divider()
+
+    val_alcohol = st.slider("ปริมาณแอลกอฮอล์ (Alcohol %)", 8.4, 14.9, 11.5, 0.1)
+    val_va = st.slider("กรดระเหย (Volatile Acidity: g/dm³)", 0.12, 1.58, 0.40, 0.01)
+    val_sulph = st.slider("ปริมาณซัลเฟต (Sulphates: g/dm³)", 0.33, 2.00, 0.74, 0.01)
+    val_citric = st.slider("กรดซิตริก (Citric Acid: g/dm³)", 0.00, 1.00, 0.38, 0.01)
+
+# ประมวลผลการทำนายด้วย KNN แบบ Real-time
+features_list = ["alcohol", "volatile acidity", "sulphates", "citric acid"]
+input_scenario = pd.DataFrame([[val_alcohol, val_va, val_sulph, val_citric]], columns=features_list)
+prediction_result = knn_model.predict(input_scenario)[0]
+
+# หัวข้อหลักบนหน้าจอ
 st.markdown("""
-<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #00FF66; padding-bottom: 8px; margin-bottom: 16px;">
-    <div>
-        <span style="color:#00FF66; font-size:1.3rem; font-weight:bold; letter-spacing:2px;">OPERATION SNAKE EATER // TACTICAL SURVIVAL VIEWER</span><br>
-        <span style="color:#4B7A4B; font-size:0.85rem;">MISSION LOCATION: VIRTUOUS MISSION SECTOR 1964 // TARGET: SOVIET MILITARY RATION</span>
-    </div>
-    <div style="text-align:right;">
-        <span style="color:#00FF66; font-size:1.1rem; font-weight:bold;">CODEC: 140.85 MHz</span><br>
-        <span style="color:#4B7A4B; font-size:0.85rem;">SECURE COMM CHANNEL</span>
-    </div>
+<div style="border-bottom: 1px solid #1E3824; padding-bottom: 10px; margin-bottom: 20px;">
+    <h2 style="color:#00FF66; margin:0; font-size:1.6rem; font-weight:600; letter-spacing:0.5px;">ระบบวิเคราะห์และจำแนกคุณภาพไวน์แดง (Tactical Wine Analyzer)</h2>
+    <div style="color:#94A3B8; font-size:0.9rem; margin-top:4px;">ประเมินโครงสร้างทางเคมีและจำแนกเกรดมาตรฐานด้วยแบบจำลอง K-Nearest Neighbors</div>
 </div>
 """, unsafe_allow_html=True)
 
-# แท็บพับเก็บค่าตัวแปรลอยอยู่ที่ "ซ้ายล่าง" (Fixed Floating Drawer)
-with st.expander("[+] SENSOR TUNER: FIELD RATION PARAMETERS", expanded=False):
-    st.markdown("<div style='color:#00FF66; font-size:0.85rem; margin-bottom:8px;'>// ADJUST CHEMICAL SENSORS //</div>", unsafe_allow_html=True)
-    
-    val_alcohol = st.slider("ALCOHOL PROOF (%)", 8.4, 14.9, 11.5, 0.1)
-    val_va = st.slider("VOLATILE ACIDITY (SPOILAGE INDEX)", 0.12, 1.58, 0.40, 0.01)
-    val_sulph = st.slider("SULPHATES (PRESERVATION)", 0.33, 2.00, 0.74, 0.01)
-    val_citric = st.slider("CITRIC ACID (FRESHNESS)", 0.00, 1.00, 0.38, 0.01)
+# รูปภาพไวน์ตามระดับคุณภาพ
+img_dict = {
+    "S-Rank: คุณภาพดีเยี่ยม": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=700&q=80",
+    "B-Rank: คุณภาพปานกลาง": "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?auto=format&fit=crop&w=700&q=80",
+    "D-Rank: คุณภาพต่ำ": "https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?auto=format&fit=crop&w=700&q=80"
+}
 
-# คำนวณผลทำนายทางทหารด้วย KNN
-features_list = ["alcohol", "volatile acidity", "sulphates", "citric acid"]
-user_scenario = pd.DataFrame([[val_alcohol, val_va, val_sulph, val_citric]], columns=features_list)
-predicted_rank = model.predict(user_scenario)[0]
+# จัด Layout หลักเป็น 2 คอลัมน์ที่ชัดเจนและไม่ซ้อนทับกัน
+col_view_left, col_view_right = st.columns([1, 1], gap="large")
 
-# โครงสร้างหน้าจอ Codec: ฝั่งซ้ายรูป Snake / ฝั่งขวาบทวิเคราะห์เสบียงภาคสนาม
-col_codec_left, col_codec_right = st.columns([1, 2], gap="medium")
+with col_view_left:
+    st.markdown('<div class="tactical-card">', unsafe_allow_html=True)
+    st.markdown('<div class="tactical-header">ผลการจำแนกเกรดคุณภาพ (Classification Result)</div>', unsafe_allow_html=True)
+    
+    # แสดงป้ายระดับคุณภาพและหลอดประเมินคะแนน
+    if "S-Rank" in prediction_result:
+        st.markdown('<div class="badge-s">S-Rank: ไวน์คุณภาพดีเยี่ยม</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:0.85rem; color:#94A3B8; margin-bottom:4px;">ดัชนีรสสัมผัสและโครงสร้าง (Sensory Index: 95%)</div>', unsafe_allow_html=True)
+        st.markdown('<div class="bar-bg"><div class="bar-s"></div></div>', unsafe_allow_html=True)
+        desc_text = "ไวน์มีโครงสร้างกลมกล่อมยอดเยี่ยม แอลกอฮอล์และกรดซิตริกมีความสมดุลสูง กรดระเหยต่ำทำให้ไม่มีกลิ่นเปรี้ยวฉุน ซัลเฟตช่วยรักษากลิ่นหอมและรสชาติได้อย่างสมบูรณ์แบบ"
+    elif "B-Rank" in prediction_result:
+        st.markdown('<div class="badge-b">B-Rank: ไวน์คุณภาพปานกลาง</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:0.85rem; color:#94A3B8; margin-bottom:4px;">ดัชนีรสสัมผัสและโครงสร้าง (Sensory Index: 65%)</div>', unsafe_allow_html=True)
+        st.markdown('<div class="bar-bg"><div class="bar-b"></div></div>', unsafe_allow_html=True)
+        desc_text = "ไวน์มาตรฐาน ดื่มได้ตามเกณฑ์ทั่วไป สัดส่วนกรดและแอลกอฮอล์อยู่ในเกณฑ์ปกติ ไม่มีข้อบกพร่องทางรสชาติที่เด่นชัด เหมาะสำหรับการบริโภคทั่วไป"
+    else:
+        st.markdown('<div class="badge-d">D-Rank: ไวน์คุณภาพต่ำ (เสี่ยงต่อรสเปรี้ยวเสีย)</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:0.85rem; color:#94A3B8; margin-bottom:4px;">ดัชนีรสสัมผัสและโครงสร้าง (Sensory Index: 25%)</div>', unsafe_allow_html=True)
+        st.markdown('<div class="bar-bg"><div class="bar-d"></div></div>', unsafe_allow_html=True)
+        desc_text = "ไวน์มีกรดระเหย (Volatile Acidity) ในปริมาณสูงเกินเกณฑ์ ทำให้เกิดกลิ่นกรดอะซิติกคล้ายน้ำส้มสายชู สารกันเสียหรือแอลกอฮอล์ไม่สมดุล ส่งผลให้คุณภาพรสชาติด้อยลงอย่างเห็นได้ชัด"
 
-# ฝั่งซ้าย: รูปภาพและข้อมูลสายลับ (Snake)
-with col_codec_left:
-    st.markdown('<div class="mgs-box">', unsafe_allow_html=True)
-    st.markdown('<div class="mgs-title">CALLSIGN: NAKED SNAKE</div>', unsafe_allow_html=True)
+    st.image(img_dict[prediction_result], use_container_width=True)
+    st.markdown(f'<div class="analysis-text" style="margin-top:14px;"><strong>บทสรุปคุณลักษณะ:</strong> {desc_text}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col_view_right:
+    st.markdown('<div class="tactical-card">', unsafe_allow_html=True)
+    st.markdown('<div class="tactical-header">การวิเคราะห์ค่าสารประกอบเทียบเกณฑ์ไวน์คุณภาพสูง</div>', unsafe_allow_html=True)
+    st.caption("เปรียบเทียบค่าที่จำลองกับเกณฑ์เฉลี่ยของไวน์ระดับคุณภาพดีเยี่ยม (S-Rank Benchmark)")
     
-    if os.path.exists("./img/myprofile.png"):
-        st.image("./img/myprofile.png", use_container_width=True)
-    
+    c1, c2 = st.columns(2)
+    with c1:
+        st.metric(
+            label="ปริมาณแอลกอฮอล์ (Alcohol)",
+            value=f"{val_alcohol:.1f}%",
+            delta=f"{val_alcohol - 11.52:+.2f}% เกณฑ์มาตรฐาน (11.5%)",
+            delta_color="normal"
+        )
+        st.metric(
+            label="ปริมาณซัลเฟต (Sulphates)",
+            value=f"{val_sulph:.2f} g/dm³",
+            delta=f"{val_sulph - 0.74:+.2f} เกณฑ์มาตรฐาน (0.74)",
+            delta_color="normal"
+        )
+    with c2:
+        st.metric(
+            label="กรดระเหย (Volatile Acidity)",
+            value=f"{val_va:.2f} g/dm³",
+            delta=f"{val_va - 0.41:+.2f} เกณฑ์มาตรฐาน (0.41)",
+            delta_color="inverse"
+        )
+        st.metric(
+            label="กรดซิตริก (Citric Acid)",
+            value=f"{val_citric:.2f} g/dm³",
+            delta=f"{val_citric - 0.38:+.2f} เกณฑ์มาตรฐาน (0.38)",
+            delta_color="normal"
+        )
+
     st.markdown("""
-    <div style="font-size:0.8rem; line-height:1.6; margin-top:8px;">
-        UNIT: FOX UNIT SPECIAL FORCES<br>
-        STATUS: INFILTRATION ACTIVE<br>
-        CAMO INDEX: 95% [TIGER STRIPE]
+    <div style="margin-top:20px; font-size:0.85rem; color:#94A3B8; line-height:1.6; border-top:1px solid #1E3824; padding-top:12px;">
+        <strong style="color:#F1F5F9;">หลักการวิเคราะห์ทางเคมี:</strong><br>
+        - <strong>Alcohol:</strong> ให้ความอบอุ่น รสสัมผัส (Body) และความหวานละมุนตามธรรมชาติ<br>
+        - <strong>Volatile Acidity:</strong> ต้องมีค่าน้อยที่สุด หากสูงจะทำให้ไวน์เปรี้ยวฉุนคล้ายน้ำส้มสายชู<br>
+        - <strong>Sulphates:</strong> สารต้านอนุมูลอิสระ ป้องกันแบคทีเรียและรักษาความสดของไวน์<br>
+        - <strong>Citric Acid:</strong> เสริมความสดชื่นและความมีชีวิตชีวาของรสชาติ
     </div>
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ฝั่งขวา: การวิเคราะห์เสบียงภาคสนามและแถบสถานะ MGS3
-with col_codec_right:
-    st.markdown('<div class="mgs-box">', unsafe_allow_html=True)
-    st.markdown('<div class="mgs-title">SURVIVAL VIEWER: FIELD SPECIMEN ANALYSIS</div>', unsafe_allow_html=True)
+# กล่องข้อมูลตัวอย่างพับเก็บได้ด้านล่างสุด
+with st.expander("ดูตารางข้อมูลตัวอย่างและสถิติชุดข้อมูล (Dataset & Statistics)"):
+    st.write("ตัวอย่างข้อมูล 10 รายการแรกจากชุดข้อมูลไวน์แดง:")
+    cols_display = ["alcohol", "volatile acidity", "sulphates", "citric acid", "quality", "เกรดคุณภาพ"]
+    st.dataframe(df_wine[cols_display].head(10), use_container_width=True)
     
-    # หลอดพลัง LIFE & STAMINA
-    st.markdown('<div class="bar-label">LIFE</div>', unsafe_allow_html=True)
-    st.markdown('<div class="bar-container"><div class="life-fill"></div></div>', unsafe_allow_html=True)
-    
-    st.markdown('<div class="bar-label">STAMINA GAIN PREDICTION</div>', unsafe_allow_html=True)
-    if predicted_rank == "HIGH":
-        st.markdown('<div class="bar-container"><div class="stamina-fill-high"></div></div>', unsafe_allow_html=True)
-    elif predicted_rank == "MED":
-        st.markdown('<div class="bar-container"><div class="stamina-fill-med"></div></div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="bar-container"><div class="stamina-fill-low"></div></div>', unsafe_allow_html=True)
-
-    # รายละเอียดการประเมินตาม Rank
-    if predicted_rank == "HIGH":
-        rank_badge = '<span style="color:#FFD700; font-size:1.3rem; font-weight:bold; letter-spacing:2px;">[ S-RANK ] EXCEPTIONAL VINTAGE RATION</span>'
-        dialog_text = "PARA-MEDIC: 'Snake, this is an authentic 1964 Crimean private cellar reserve! The chemical balance and alcohol purity are immaculate. Drinking this will fully restore your stamina and steady your aim. Excellent find in the field!'"
-        img_url = "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=700&q=80"
-    elif predicted_rank == "MED":
-        rank_badge = '<span style="color:#00FF66; font-size:1.3rem; font-weight:bold; letter-spacing:2px;">[ B-RANK ] STANDARD ISSUE MILITARY RATION</span>'
-        dialog_text = "PARA-MEDIC: 'It is a standard Soviet field wine, Snake. The acidity is slightly elevated, but completely safe to consume. It should restore moderate stamina while you navigate the swamp.'"
-        img_url = "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?auto=format&fit=crop&w=700&q=80"
-    else:
-        rank_badge = '<span style="color:#FF3333; font-size:1.3rem; font-weight:bold; letter-spacing:2px;">[ D-RANK ] HAZARDOUS / SEVERELY SPOILED</span>'
-        dialog_text = "PARA-MEDIC: 'Snake, drop that bottle immediately! The volatile acidity indicates severe bacterial degradation into acetic acid. Consuming this will cause violent stomach cramps and drain your remaining stamina!'"
-        img_url = "https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?auto=format&fit=crop&w=700&q=80"
-
-    st.markdown(f"<div style='margin-bottom:12px;'>{rank_badge}</div>", unsafe_allow_html=True)
-    st.markdown(f'<div class="codec-dialog">{dialog_text}</div>', unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ส่วนแสดงภาพตัวอย่างและรายงานเซนเซอร์เคมี
-col_specimen, col_sensor = st.columns([1, 2], gap="medium")
-
-with col_specimen:
-    st.markdown('<div class="mgs-box">', unsafe_allow_html=True)
-    st.markdown('<div class="mgs-title">FIELD SPECIMEN OPTICAL FEED</div>', unsafe_allow_html=True)
-    st.image(img_url, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with col_sensor:
-    st.markdown('<div class="mgs-box">', unsafe_allow_html=True)
-    st.markdown('<div class="mgs-title">SENSOR TELEMETRY // CURRENT INPUT VS S-RANK BENCHMARK</div>', unsafe_allow_html=True)
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        st.metric("ALCOHOL PROOF", f"{val_alcohol:.1f}%", f"{val_alcohol - 11.52:+.2f}% VS S-RANK")
-        st.metric("SULPHATES", f"{val_sulph:.2f}", f"{val_sulph - 0.74:+.2f} VS S-RANK")
-    with c2:
-        st.metric("VOLATILE ACIDITY", f"{val_va:.2f}", f"{val_va - 0.41:+.2f} VS S-RANK", delta_color="inverse")
-        st.metric("CITRIC ACID", f"{val_citric:.2f}", f"{val_citric - 0.38:+.2f} VS S-RANK")
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.write("การกระจายตัวของจำนวนตัวอย่างตามเกรดคุณภาพ:")
+    st.bar_chart(df_wine["เกรดคุณภาพ"].value_counts())
