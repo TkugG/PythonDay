@@ -11,13 +11,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# สไตล์ CSS: ฟอนต์ Prompt อ่านง่าย สบายตา คมชัด สไตล์ Tactical Dark โดยไม่มีอิโมจิ
+# สไตล์ CSS: ฟอนต์ Prompt คมชัด ไม่ทับซ้อน และไม่ซ่อนปุ่มเปิด-ปิด Sidebar
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 
-    html, body, [class*="css"], .stMarkdown, p, div, span, label {
-        font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    /* กำหนดฟอนต์หลักแบบปลอดภัย ไม่บังคับ div/span ทุกตัวเพื่อป้องกันไอคอนชนตัวหนังสือ */
+    html, body, [class*="css"] {
+        font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
     /* พื้นหลังโทน Tactical Slate Dark */
@@ -26,15 +27,35 @@ st.markdown("""
         color: #F1F5F9 !important;
     }
 
-    #MainMenu, footer, header {visibility: hidden;}
+    /* ซ่อนเฉพาะเมนูที่ไม่จำเป็น ไม่ซ่อน Header เพื่อให้ปุ่มเปิด Sidebar ยังอยู่ */
+    #MainMenu, footer {
+        visibility: hidden;
+    }
+    
+    /* ปรับแต่ง Header ให้โปร่งใส ไม่บดบังปุ่มเปิด Sidebar */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+    }
+
+    /* ปุ่มเปิด-ปิด Sidebar (ลูกศรขอบซ้ายบน) ให้มองเห็นเด่นชัด ไม่หาย */
+    [data-testid="stSidebarCollapsedControl"] {
+        display: block !important;
+        visibility: visible !important;
+        background-color: #0E1610 !important;
+        color: #00FF66 !important;
+        border: 1px solid #1E3824 !important;
+        border-radius: 4px !important;
+        padding: 4px !important;
+        z-index: 999999 !important;
+    }
 
     .block-container {
-        padding-top: 1.5rem;
+        padding-top: 2rem;
         padding-bottom: 3rem;
         max-width: 1300px;
     }
 
-    /* กล่องข้อมูล Tactical Card คมชัด ไม่เบลอ */
+    /* กล่องข้อมูล Tactical Card คมชัด */
     .tactical-card {
         background-color: #0E1610;
         border: 1px solid #1E3824;
@@ -47,7 +68,7 @@ st.markdown("""
         color: #00FF66;
         font-size: 1.05rem;
         font-weight: 600;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
         border-bottom: 1px solid #1E3824;
         padding-bottom: 8px;
         margin-bottom: 16px;
@@ -88,7 +109,7 @@ st.markdown("""
         margin-bottom: 12px;
     }
 
-    /* แถบหลอดประเมินคะแนนรสสัมผัส (Sensory Index) */
+    /* แถบหลอดประเมินคะแนนรสสัมผัส */
     .bar-bg {
         background-color: #152218;
         border: 1px solid #28442E;
@@ -125,13 +146,38 @@ st.markdown("""
         border-radius: 0 4px 4px 0;
     }
 
+    /* แก้ปัญหาข้อความใน Expander ชนหรือทับกับไอคอนลูกศร */
+    [data-testid="stExpander"] {
+        border: 1px solid #1E3824 !important;
+        border-radius: 6px !important;
+        background-color: #0A120C !important;
+        margin-top: 20px !important;
+    }
+    [data-testid="stExpander"] details summary {
+        padding: 12px 16px !important;
+        color: #00FF66 !important;
+        font-size: 0.95rem !important;
+        font-weight: 500 !important;
+        background-color: #0E1610 !important;
+        cursor: pointer !important;
+    }
+    [data-testid="stExpander"] details summary p {
+        display: inline-block !important;
+        margin: 0 !important;
+        padding-left: 8px !important;
+        color: #00FF66 !important;
+    }
+    [data-testid="stExpander"] details [data-testid="stExpanderDetails"] {
+        padding: 18px !important;
+        background-color: #070C08 !important;
+    }
+
     /* ปรับแต่ง Sidebar ให้เป็นแผงควบคุม Tactical */
     section[data-testid="stSidebar"] {
         background-color: #0A120C !important;
         border-right: 1px solid #1E3824 !important;
     }
-    section[data-testid="stSidebar"] .stMarkdown h2, 
-    section[data-testid="stSidebar"] .stMarkdown h3 {
+    section[data-testid="stSidebar"] h3 {
         color: #00FF66 !important;
     }
 </style>
@@ -164,7 +210,7 @@ def train_knn_model(df):
 df_wine = load_wine_data()
 knn_model = train_knn_model(df_wine)
 
-# แถบควบคุมตัวแปรสารเคมีใน Sidebar (พับเก็บได้ ไม่บังหน้าจอหลัก)
+# แถบควบคุมตัวแปรสารเคมีใน Sidebar (มีปุ่มเปิด-ปิดที่ชัดเจน ไม่หาย)
 with st.sidebar:
     st.markdown("### แผงควบคุมตัวแปรไวน์")
     st.caption("ปรับแต่งคุณลักษณะทางเคมีเพื่อจำลองผลลัพธ์แบบทันที")
@@ -202,7 +248,7 @@ img_dict = {
     "D-Rank: คุณภาพต่ำ": "https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?auto=format&fit=crop&w=700&q=80"
 }
 
-# จัด Layout หลักเป็น 2 คอลัมน์ที่ชัดเจนและไม่ซ้อนทับกัน
+# จัด 2 คอลัมน์หลักสำหรับแสดงผลลัพธ์และตัวชี้วัดเคมี
 col_view_left, col_view_right = st.columns([1, 1], gap="large")
 
 with col_view_left:
@@ -274,11 +320,11 @@ with col_view_right:
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# กล่องข้อมูลตัวอย่างพับเก็บได้ด้านล่างสุด
+# กล่องข้อมูลตัวอย่างพับเก็บได้ด้านล่างสุด พร้อมจัดระยะห่างไม่ให้ตัวหนังสือทับกัน
 with st.expander("ดูตารางข้อมูลตัวอย่างและสถิติชุดข้อมูล (Dataset & Statistics)"):
-    st.write("ตัวอย่างข้อมูล 10 รายการแรกจากชุดข้อมูลไวน์แดง:")
+    st.markdown("<div style='margin-bottom:8px; font-weight:500; color:#F1F5F9;'>ตัวอย่างข้อมูล 10 รายการแรกจากชุดข้อมูลไวน์แดง:</div>", unsafe_allow_html=True)
     cols_display = ["alcohol", "volatile acidity", "sulphates", "citric acid", "quality", "เกรดคุณภาพ"]
     st.dataframe(df_wine[cols_display].head(10), use_container_width=True)
     
-    st.write("การกระจายตัวของจำนวนตัวอย่างตามเกรดคุณภาพ:")
+    st.markdown("<div style='margin-top:16px; margin-bottom:8px; font-weight:500; color:#F1F5F9;'>การกระจายตัวของจำนวนตัวอย่างตามเกรดคุณภาพ:</div>", unsafe_allow_html=True)
     st.bar_chart(df_wine["เกรดคุณภาพ"].value_counts())
